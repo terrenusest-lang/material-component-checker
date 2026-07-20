@@ -1,15 +1,35 @@
-<form class="mcc-scanner">
-  <p>Choose English Item compendiums containing D&amp;D5e spells. The scanner creates or updates the world compendium <strong>Material Components</strong>.</p>
-  <p>Indexed spells: <strong>{{count}}</strong></p>
-  <div style="display:flex; gap:.5rem; margin-bottom:.5rem">
-    <button type="button" data-action="select-all"><i class="fas fa-check-double"></i> Select all</button>
-    <button type="button" data-action="clear-all"><i class="fas fa-times"></i> Clear</button>
+<form class="mcc-scanner-form">
+  <p>
+    Choose English Item compendiums containing D&amp;D5e spells. The scanner creates or updates the world compendium
+    <strong>Material Components</strong>.
+  </p>
+
+  <p>Indexed spells: <strong>{{indexedCount}}</strong></p>
+
+  <div class="form-group">
+    <button type="button" data-action="select-all">
+      <i class="fas fa-check-double"></i> Select all
+    </button>
+    <button type="button" data-action="clear-all">
+      <i class="fas fa-times"></i> Clear
+    </button>
   </div>
-  <div style="max-height:360px; overflow:auto; border:1px solid var(--color-border-light-2); padding:.5rem">
+
+  <fieldset style="max-height: 360px; overflow: auto;">
+    <legend>Spell compendiums</legend>
     {{#each packs}}
-      <label style="display:block; margin:.25rem 0"><input type="checkbox" name="packs" value="{{id}}"> <strong>{{title}}</strong> <small>({{id}})</small></label>
+      <label style="display: flex; gap: .5rem; align-items: center; padding: .25rem 0;">
+        <input type="checkbox" name="packs" value="{{id}}">
+        <span><strong>{{title}}</strong> <small>({{package}})</small></span>
+      </label>
+    {{else}}
+      <p>No Item compendiums found.</p>
     {{/each}}
-  </div>
-  <p data-role="status" style="min-height:2.5em"></p>
-  <button type="button" data-action="scan"><i class="fas fa-flask"></i> Scan selected compendiums</button>
+  </fieldset>
+
+  <p data-role="status" style="min-height: 2.5em;"></p>
+
+  <button type="button" data-action="scan">
+    <i class="fas fa-flask"></i> Scan selected compendiums
+  </button>
 </form>
