@@ -1,0 +1,120 @@
+import { INDEX_SETTING, MODULE_ID, POUCH_KEY } from "./constants.js";
+import { itemValueInGp, normalize, readMaterial } from "./utils.js";
+
+const pendingComponents = new WeakMap();
+
+export function registerActivityHooks() {
+  Hooks.on("dnd5e.preUseActivity", preUseActivity);
+  Hooks.on("dnd5e.postUseActivity", postUseActivity);
+}
+
+async function preUseActivity(activity) {
+  try {
+    if (game.user.isGM && game.settings.get(MODULE_ID, "gmBypass")) return true;
+
+    const spell = activity?.item;
+    if (!spell || spell.type !== "spell") return true;
+
+    const material = readMaterial(spell);
+    if (!material.required) return true;
+
+    const actor = spell.actor ?? activity.actor;
+    if (!actor) return block("The casting actor could not be resolved.");
+
+    const record = resolveSpellRecord(spell);
+    if (!record?.components?.length) {
+      return block(`${spell.name} has no indexed material component. Run the scanner first.`);
+    }
+
+    const mode = game.settings.get(MODULE_ID, "mode");
+    const relevant = record.components.filter(component =>
+      mode !== "costly" || component.minimumCost > 0 || component.consumed
+    );
+    if (!relevant.length) return true;
+
+    const missing = relevant.filter(requirement => !findInventoryComponent(actor, requirement));
+    if (!missing.length) {
+      pendingComponents.set(activity, relevant);
+      return true;
+    }
+
+    const focusCanReplaceAll = mode === "raw"
+      && missing.every(component => !component.minimumCost && !component.consumed)
+      && hasSpellcastingFocus(actor);
+    if (focusCanReplaceAll) return true;
+
+    return block(`${actor.name} cannot cast “${spell.name}”. Missing: ${missing.map(component => component.name).join(", ")}.`);
+  } catch (error) {
+    console.error(`${MODULE_ID} | Component check failed`, error);
+    return true;
+  }
+}
+
+async function postUseActivity(activity) {
+  if (!game.settings.get(MODULE_ID, "consumeComponents")) return;
+
+  const actor = activity?.item?.actor ?? activity?.actor;
+  const used = pendingComponents.get(activity)?.filter(component => component.consumed) ?? [];
+  pendingComponents.delete(activity);
+
+  for (const requirement of used) {
+    const item = findInventoryComponent(actor, requirement);
+    if (!item) continue;
+
+    const quantity = Number(item.system.quantity ?? 1);
+    await item.update({
+      "system.quantity": Math.max(0, quantity - (requirement.quantity || 1))
+    });
+  }
+}
+
+function resolveSpellRecord(spell) {
+  const index = game.settings.get(MODULE_ID, INDEX_SETTING) ?? {};
+  if (index[spell.uuid]) return index[spell.uuid];
+
+  const sourceId = spell.getFlag("core", "sourceId");
+  if (sourceId && index[sourceId]) return index[sourceId];
+
+  return Object.values(index).find(record => record.spellName === spell.name) ?? null;
+}
+
+function findInventoryComponent(actor, requirement) {
+  if (!actor) return null;
+
+  const requiredName = normalize(requirement.name);
+  const allowLoose = game.settings.get(MODULE_ID, "allowLooseComponents");
+  const pouchIds = new Set(getComponentPouches(actor).map(pouch => pouch.id));
+
+  return actor.items.find(item => {
+    if (Number(item.system?.quantity ?? 1) < (requirement.quantity || 1)) return false;
+
+    const key = item.getFlag(MODULE_ID, "componentKey");
+    if (normalize(item.name) !== requiredName && key !== requirement.key) return false;
+    if (!allowLoose && !pouchIds.has(item.system?.container)) return false;
+
+    return !requirement.minimumCost || itemValueInGp(item) >= requirement.minimumCost;
+  });
+}
+
+function getComponentPouches(actor) {
+  return actor.items.filter(item =>
+    item.type === "container"
+    && Number(item.system?.quantity ?? 1) > 0
+    && (
+      item.getFlag(MODULE_ID, "componentPouchContainer")
+      || item.getFlag(MODULE_ID, "pouchKey") === POUCH_KEY
+    )
+  );
+}
+
+function hasSpellcastingFocus(actor) {
+  return actor.items.some(item => Number(item.system?.quantity ?? 1) > 0 && (
+    /\b(?:arcane focus|druidic focus|holy symbol)\b/i.test(item.name)
+    || item.getFlag(MODULE_ID, "focus")
+  ));
+}
+
+function block(message) {
+  ui.notifications.error(message);
+  return false;
+}
