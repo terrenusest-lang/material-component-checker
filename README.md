@@ -1,197 +1,107 @@
 # Material Component Checker
 
-Material Component Checker is an English-only module for Foundry Virtual Tabletop 13 and the D&D5e game system. It scans spell compendiums, extracts material component descriptions, creates inventory items for those components, creates a real spell component pouch container, and prevents a spell from being cast when its required material component is unavailable.
+Material Component Checker is an English-only module for Foundry Virtual Tabletop and the D&D5e game system. It scans spell compendiums, creates reusable material-component items, adds a real **Spell Component Pouch** container, checks an actor's inventory before casting, and optionally consumes components after a successful cast.
 
 ## Compatibility
 
-- Foundry Virtual Tabletop 13
-- D&D5e 4.0.0 or newer
-- Verified with D&D5e 5.3.0
+Version 2.2.0 targets:
+
+- Foundry Virtual Tabletop **14.365**
+- D&D5e system **5.3.3**
 - English spell data only
 
-The scanner is designed for English material-component wording. Translated spell compendiums are not supported.
+The scanner uses Foundry's `ApplicationV2` API. Spell validation uses `dnd5e.preUseActivity`, and automatic consumption uses `dnd5e.postUseActivity`.
 
-## Main features
+## Features
 
-- Scans one or more Item compendiums selected by the GM.
-- Reads spells that require material components.
-- Extracts English material-component text.
+- Scans selected Item compendiums for D&D5e spells.
+- Extracts English material-component descriptions.
 - Creates a world compendium named **Material Components**.
-- Creates reusable component items as D&D5e `loot` items.
-- Creates a real D&D5e `container` item named **Spell Component Pouch**.
-- Stores a world-level spell UUID to component index without modifying source compendiums.
-- Checks an actor's inventory before a spell is used.
-- Supports costly and consumed components.
-- Supports automatic deduction of consumed components.
+- Creates material components as reusable D&D5e `loot` items.
+- Creates **Spell Component Pouch** as a real D&D5e `container` item.
+- Keeps source spell compendiums unchanged.
+- Stores a world-level `Spell UUID → components` index.
+- Blocks casting when required components are missing.
+- Checks component quantity and minimum monetary value.
+- Supports consumed components and automatic quantity reduction.
 - Supports Arcane Focus, Druidic Focus, and Holy Symbol in Rules-as-Written mode.
 - Supports multiple component pouches on one actor.
-- Optionally accepts components stored outside a pouch.
-- Optionally allows the GM to bypass all checks.
+- Optionally accepts loose components outside a pouch.
+- Optionally allows GM bypass.
 
 ## Installation
 
-1. Extract the `material-component-checker` folder from the ZIP archive.
-2. Copy it into the Foundry user-data modules directory:
+1. Download or clone this repository.
+2. Place the repository folder in:
 
    ```text
-   FoundryVTT/Data/modules/
+   FoundryVTT/Data/modules/material-component-checker
    ```
 
 3. Restart Foundry VTT.
-4. Open the desired world.
-5. Open **Manage Modules**.
-6. Enable **Material Component Checker**.
+4. Open the world and enable **Material Component Checker** under **Manage Modules**.
 
 ## Initial setup
 
-The module does not ship with a fixed component list. The GM must scan the English spell compendiums used by the world.
+1. Open **Configure Settings → Module Settings**.
+2. Find **Material Component Scanner**.
+3. Click **Scan spell compendiums**.
+4. Select one or more English Item compendiums containing D&D5e spells.
+5. Click **Scan selected compendiums**.
 
-1. Open **Configure Settings**.
-2. Open **Module Settings**.
-3. Find **Material Component Scanner**.
-4. Click **Scan spell compendiums**.
-5. Select one or more Item compendiums containing English D&D5e spells.
-6. Click **Scan selected compendiums**.
-7. Wait for the completion message.
+The module creates or updates the world compendium **Material Components**. It contains all generated component items and the **Spell Component Pouch**.
 
-The scanner creates or updates the world compendium:
+Run the scanner again whenever spell compendiums are added or updated.
 
-```text
-Material Components
-```
-
-The compendium contains:
-
-- generated material-component items;
-- the **Spell Component Pouch** container.
-
-The original spell compendiums are not edited.
-
-## Adding a component pouch to a character
+## Spell Component Pouch
 
 1. Open the **Material Components** compendium.
-2. Drag **Spell Component Pouch** to the actor's inventory.
-3. Drag required component items from the same compendium to the actor.
-4. On the D&D5e actor sheet, move those component items into the pouch.
+2. Drag **Spell Component Pouch** to the character's inventory.
+3. Drag required material-component items to the character.
+4. Move those component items inside the pouch on the D&D5e actor sheet.
 
-The pouch is a real D&D5e container. The module checks each component item's `system.container` value to determine whether it is stored inside a module-created pouch.
+The pouch is a real container. It does not supply unlimited components by itself. Costly and consumed components must exist as actual items.
 
-An actor may carry more than one **Spell Component Pouch**. Components stored in any valid pouch are accepted.
+By default, generated components must be stored inside a valid module-created pouch. Enable **Allow loose material components** to accept matching items elsewhere in the inventory.
 
-The pouch itself does not provide unlimited components. It is only a container. Required costly or consumed components must exist as actual inventory items.
-
-## Casting workflow
-
-When a spell is used, the module:
-
-1. Detects the spell before its activity is executed.
-2. Looks up the spell in the scanner-generated index.
-3. Determines which material components must be checked under the selected checking mode.
-4. Searches the casting actor's inventory.
-5. Verifies quantity, location, and minimum value.
-6. Blocks the cast when a required component is missing.
-7. Displays an error notification listing the missing components.
-8. After a successful cast, optionally reduces the quantity of consumed components.
-
-A blocked cast is cancelled before normal spell use proceeds.
-
-## Module settings
-
-All settings are world settings and are controlled by the GM.
+## Settings
 
 ### Checking mode
 
-Controls which material components are required.
+**Rules as written**
 
-#### Rules as written
-
-This is the default mode.
-
-- Costly components must exist as inventory items.
-- Consumed components must exist as inventory items.
+- Costly and consumed components must be present.
 - Free, non-consumed components may be replaced by an Arcane Focus, Druidic Focus, or Holy Symbol.
-- A focus does not replace a component with a listed cost.
-- A focus does not replace a component consumed by the spell.
 
-The module recognizes focuses by an English inventory-item name containing:
+**Always require the actual item**
 
-- `Arcane Focus`
-- `Druidic Focus`
-- `Holy Symbol`
+- Every indexed material component must exist as an inventory item.
+- A focus does not replace free components.
 
-A custom item can also be recognized by setting the module flag `focus` to `true`.
+**Check only costly or consumed components**
 
-#### Always require the actual item
-
-Every indexed material component must exist as a matching inventory item.
-
-A spellcasting focus does not replace free components in this mode.
-
-#### Check only costly or consumed components
-
-The module ignores free, non-consumed components.
-
-It checks only components that:
-
-- have a minimum monetary value; or
-- are consumed by the spell.
-
-This is the least intrusive mode for campaigns that only track important components.
+- Free, non-consumed components are ignored.
+- Only important components are tracked.
 
 ### Allow GM bypass
 
-Default: disabled.
-
-When enabled, spell casts initiated by a GM are never blocked by the module. Player casts are still checked normally.
+When enabled, casts initiated by a GM are not blocked.
 
 ### Allow loose material components
 
-Default: disabled.
-
-When disabled, matching component items must be stored inside a valid **Spell Component Pouch**.
-
-When enabled, the module also accepts matching component items located elsewhere in the actor's inventory.
-
-This option does not make the pouch itself supply components. It only changes whether loose inventory items are accepted.
+When disabled, components must be stored inside **Spell Component Pouch**. When enabled, matching loose inventory items are also accepted.
 
 ### Consume components automatically
 
-Default: enabled.
-
-When enabled, a consumed component's inventory quantity is reduced after a successful spell use.
-
-For example, if the actor has two matching diamonds and the spell consumes one, the quantity becomes one.
-
-When the resulting quantity reaches zero, the item remains in the inventory with quantity `0`; it is not automatically deleted.
-
-### Material Component Scanner
-
-Opens the scanner window used to:
-
-- select Item compendiums;
-- scan English spells;
-- create or update component items;
-- create the Spell Component Pouch;
-- rebuild the spell-component index.
-
-Run the scanner again after adding or updating spell compendiums.
+When enabled, the quantity of a consumed component is reduced after a successful spell use. Items that reach quantity `0` remain in the inventory.
 
 ## Component matching
 
-Generated component items contain a module-specific component key. During a cast, the module first uses that key and also supports normalized exact English-name matching.
+Generated items contain a module-specific component key. Matching also supports normalized exact English names and ignores capitalization, punctuation, repeated whitespace, and basic English articles.
 
-Matching ignores:
-
-- capitalization;
-- punctuation;
-- repeated whitespace;
-- basic English articles such as `a`, `an`, `the`, and `some`.
-
-For the most reliable results, use the generated items from the **Material Components** compendium instead of manually creating similarly named items.
+For reliable matching, use the generated items from the **Material Components** compendium.
 
 ## Cost checks
-
-For a costly component, the module compares the spell's minimum required value against the D&D5e price stored on the inventory item.
 
 Supported denominations:
 
@@ -201,129 +111,38 @@ Supported denominations:
 - gp
 - pp
 
-All prices are converted to a gold-piece equivalent for comparison.
+Prices are converted to a gold-piece equivalent. For example, a spell requiring a diamond worth at least 300 gp accepts a diamond item worth 300 gp or more.
 
-Example:
+## Scanner limitations
 
-```text
-A diamond worth at least 300 gp
-```
-
-A diamond item worth 300 gp or more is accepted. A diamond worth 250 gp is rejected.
-
-## Consumed components
-
-The scanner attempts to detect wording such as:
-
-```text
-which the spell consumes
-```
-
-When automatic consumption is enabled, the matching item's quantity is reduced after successful use.
-
-The item consumed is the actual matching inventory item, including an item stored inside a component pouch.
-
-## Spell index behavior
-
-The scanner stores a world-level mapping from spell UUIDs to generated component records.
-
-Source compendiums remain unchanged, including locked system and module compendiums.
-
-For a spell imported to an actor, the module resolves the index in this order:
-
-1. the spell's own UUID;
-2. its `core.sourceId` flag;
-3. an exact English spell-name fallback.
+Material descriptions are natural language, so unusual third-party wording may require manual review. The parser is designed for English data and may not correctly handle translations, complex alternatives, or highly customized spell structures.
 
 If a spell requiring materials has no index entry, the cast is blocked and the user is instructed to run the scanner.
 
-## Re-scanning
-
-Re-run the scanner when:
-
-- a new spell compendium is installed;
-- a spell compendium is updated;
-- new homebrew spells are added to a compendium;
-- component parsing rules change after a module update;
-- the Material Components compendium or spell index needs rebuilding.
-
-Existing generated component items are reused when their component key matches. Source spell compendiums are never modified.
-
-## English parser behavior
-
-Material descriptions are natural language, so extraction cannot be perfect for every third-party source.
-
-The parser currently attempts to:
-
-- remove cost wording from component names;
-- detect minimum monetary value;
-- detect whether a component is consumed;
-- split simple lists joined by `and`, `or`, commas, or semicolons;
-- preserve descriptive phrases such as `a piece of`, `a drop of`, or `a sprig of` as one component where possible;
-- normalize generated component names to English title case.
-
-Examples:
-
-```text
-A tiny ball of bat guano and sulfur
-```
-
-may produce separate generated items for bat guano and sulfur.
-
-```text
-A diamond worth at least 300 gp, which the spell consumes
-```
-
-produces a diamond component with a 300 gp minimum and the consumed flag.
-
-## Limitations
-
-- Only English spell-component wording is supported.
-- Unusual third-party wording may be parsed incorrectly.
-- Complex alternatives in one material description may require manual correction.
-- The scanner does not modify source spells to embed component UUIDs.
-- Imported spells with no source UUID rely on an exact English-name fallback.
-- The current parser generally assigns a detected monetary cost to the first parsed component in a list.
-- Automatic consumption changes quantity but does not delete zero-quantity items.
-- A component item must use the D&D5e price field for minimum-value checks.
-- A custom container is not automatically accepted as a pouch unless it carries the module's pouch flag.
-
 ## Troubleshooting
 
-### A spell is blocked with "no indexed material component"
+**The spell says it has no indexed component**
 
-Run **Material Component Scanner** and ensure the compendium containing that English spell was selected.
+Run the scanner and select the compendium containing that spell.
 
-### A component exists but is reported missing
+**A component exists but is reported missing**
 
 Check that:
 
-- the item quantity is at least 1;
-- the generated component item was used;
-- the item is inside **Spell Component Pouch** when loose components are disabled;
-- the item's value meets the spell's minimum cost;
-- the scanner was run after the spell compendium was installed or updated.
+- quantity is at least 1;
+- the generated component item is being used;
+- the item is inside the pouch when loose components are disabled;
+- its value meets the minimum cost;
+- the scanner was run after the compendium was installed or updated.
 
-### A focus does not replace the component
+**A focus does not replace the component**
 
-Confirm that:
+Confirm that Rules-as-Written mode is selected and that the component is neither costly nor consumed.
 
-- **Checking mode** is set to **Rules as written**;
-- the component has no monetary cost;
-- the component is not consumed;
-- the focus item name contains `Arcane Focus`, `Druidic Focus`, or `Holy Symbol`.
+**Consumed components are not deducted**
 
-### Components outside the pouch are ignored
+Confirm that automatic consumption is enabled and the English material wording clearly indicates consumption.
 
-Enable **Allow loose material components** in Module Settings, or move the component items into a module-created **Spell Component Pouch**.
+## Version
 
-### Consumed components are not deducted
-
-Confirm that **Consume components automatically** is enabled and the spell's English material wording clearly indicates that the component is consumed.
-
-## Uninstallation
-
-1. Disable the module in **Manage Modules**.
-2. Delete the `material-component-checker` folder from the Foundry modules directory.
-
-The world compendium **Material Components** and world settings may remain in the world after the module is removed. Delete the compendium manually only if its generated items are no longer needed.
+Current module version: **2.2.0**
