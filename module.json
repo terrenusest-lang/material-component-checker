@@ -1,0 +1,30 @@
+{
+  "id": "material-component-checker",
+  "title": "Material Component Checker",
+  "description": "English-only D&D5e material component scanner with a real Spell Component Pouch container, compendium builder, inventory validator, and component consumer.",
+  "version": "2.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Custom module"
+    }
+  ],
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "4.0.0",
+          "verified": "5.3.0"
+        }
+      }
+    ]
+  }
+}
