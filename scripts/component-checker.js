@@ -18,7 +18,11 @@ function getOriginalSpell(activity) {
   return actor?.items?.get(itemId) ?? activity?.item ?? null;
 }
 
-async function preUseActivity(activity) {
+/**
+ * This hook MUST stay synchronous. D&D5e calls Hooks.call(), not Hooks.callAll()
+ * with awaiting, and only an immediate false return cancels activity.use().
+ */
+function preUseActivity(activity) {
   try {
     if (game.user.isGM && game.settings.get(MODULE_ID, "gmBypass")) return true;
 
@@ -48,10 +52,23 @@ async function preUseActivity(activity) {
       return true;
     }
 
-    const focusCanReplaceAll = mode === "raw"
-      && missing.every(component => !component.minimumCost && !component.consumed)
-      && hasSpellcastingFocus(actor);
-    if (focusCanReplaceAll) return true;
+    if (mode === "raw") {
+      const substitutable = missing.filter(component => !component.minimumCost && !component.consumed);
+      const mandatoryItems = missing.filter(component => component.minimumCost || component.consumed);
+
+      if (!mandatoryItems.length && substitutable.length) {
+        if (hasSpellcastingFocus(actor)) return true;
+        return block(
+          `${actor.name} cannot cast “${spell.name}”. Missing material components and no spellcasting focus is present.`
+        );
+      }
+
+      if (mandatoryItems.length) {
+        return block(
+          `${actor.name} cannot cast “${spell.name}”. Missing required component items: ${mandatoryItems.map(component => component.name).join(", ")}. A focus cannot replace costly or consumed components.`
+        );
+      }
+    }
 
     return block(`${actor.name} cannot cast “${spell.name}”. Missing: ${missing.map(component => component.name).join(", ")}.`);
   } catch (error) {
@@ -124,13 +141,24 @@ function getComponentPouches(actor) {
 }
 
 function hasSpellcastingFocus(actor) {
-  return actor.items.some(item => Number(item.system?.quantity ?? 1) > 0 && (
-    /\b(?:arcane focus|druidic focus|holy symbol)\b/i.test(item.name)
-    || item.getFlag(MODULE_ID, "focus")
-  ));
+  return actor.items.some(item => {
+    if (Number(item.system?.quantity ?? 1) <= 0) return false;
+
+    if (item.getFlag(MODULE_ID, "focus")) return true;
+    if (item.system?.focus === true) return true;
+
+    const typeValue = String(item.system?.type?.value ?? item.system?.type ?? "").toLowerCase();
+    if (["focus", "arcane", "druidic", "holy"].includes(typeValue)) return true;
+
+    const properties = item.system?.properties;
+    if (properties instanceof Set && properties.has("focus")) return true;
+    if (Array.isArray(properties) && properties.includes("focus")) return true;
+
+    return /\b(?:arcane focus|druidic focus|holy symbol|spellcasting focus)\b/i.test(item.name);
+  });
 }
 
 function block(message) {
-  ui.notifications.error(message);
+  ui.notifications.error(message, { permanent: false });
   return false;
 }
