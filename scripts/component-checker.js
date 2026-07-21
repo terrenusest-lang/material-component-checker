@@ -1,24 +1,34 @@
 import { INDEX_SETTING, MODULE_ID, POUCH_KEY } from "./constants.js";
 import { itemValueInGp, normalize, readMaterial } from "./utils.js";
 
-const pendingComponents = new WeakMap();
+const pendingComponents = new Map();
 
 export function registerActivityHooks() {
   Hooks.on("dnd5e.preUseActivity", preUseActivity);
   Hooks.on("dnd5e.postUseActivity", postUseActivity);
 }
 
+function getActivityKey(activity) {
+  return activity?.uuid ?? `${activity?.item?.uuid ?? "unknown"}:${activity?.id ?? "unknown"}`;
+}
+
+function getOriginalSpell(activity) {
+  const actor = activity?.actor ?? activity?.item?.actor;
+  const itemId = activity?.item?.id;
+  return actor?.items?.get(itemId) ?? activity?.item ?? null;
+}
+
 async function preUseActivity(activity) {
   try {
     if (game.user.isGM && game.settings.get(MODULE_ID, "gmBypass")) return true;
 
-    const spell = activity?.item;
+    const spell = getOriginalSpell(activity);
     if (!spell || spell.type !== "spell") return true;
 
     const material = readMaterial(spell);
     if (!material.required) return true;
 
-    const actor = spell.actor ?? activity.actor;
+    const actor = spell.actor ?? activity?.actor;
     if (!actor) return block("The casting actor could not be resolved.");
 
     const record = resolveSpellRecord(spell);
@@ -34,7 +44,7 @@ async function preUseActivity(activity) {
 
     const missing = relevant.filter(requirement => !findInventoryComponent(actor, requirement));
     if (!missing.length) {
-      pendingComponents.set(activity, relevant);
+      pendingComponents.set(getActivityKey(activity), { actorUuid: actor.uuid, components: relevant });
       return true;
     }
 
@@ -46,18 +56,22 @@ async function preUseActivity(activity) {
     return block(`${actor.name} cannot cast “${spell.name}”. Missing: ${missing.map(component => component.name).join(", ")}.`);
   } catch (error) {
     console.error(`${MODULE_ID} | Component check failed`, error);
-    return true;
+    return block(`Material component validation failed: ${error.message}`);
   }
 }
 
 async function postUseActivity(activity) {
   if (!game.settings.get(MODULE_ID, "consumeComponents")) return;
 
-  const actor = activity?.item?.actor ?? activity?.actor;
-  const used = pendingComponents.get(activity)?.filter(component => component.consumed) ?? [];
-  pendingComponents.delete(activity);
+  const key = getActivityKey(activity);
+  const pending = pendingComponents.get(key);
+  pendingComponents.delete(key);
+  if (!pending) return;
 
-  for (const requirement of used) {
+  const actor = await fromUuid(pending.actorUuid);
+  if (!actor) return;
+
+  for (const requirement of pending.components.filter(component => component.consumed)) {
     const item = findInventoryComponent(actor, requirement);
     if (!item) continue;
 
@@ -90,7 +104,9 @@ function findInventoryComponent(actor, requirement) {
 
     const key = item.getFlag(MODULE_ID, "componentKey");
     if (normalize(item.name) !== requiredName && key !== requirement.key) return false;
-    if (!allowLoose && !pouchIds.has(item.system?.container)) return false;
+
+    const containerId = item.system?.container?.id ?? item.system?.container ?? null;
+    if (!allowLoose && !pouchIds.has(containerId)) return false;
 
     return !requirement.minimumCost || itemValueInGp(item) >= requirement.minimumCost;
   });
