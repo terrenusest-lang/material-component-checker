@@ -1,6 +1,8 @@
 import { COMPONENT_PACK, INDEX_SETTING, MODULE_ID, POUCH_KEY, REVIEW_SETTING } from "./constants.js";
 import { componentItemData, parseEnglishMaterial, readMaterial } from "./utils.js";
 
+const POUCH_ICON = `modules/${MODULE_ID}/assets/spell-component-pouch.svg`;
+
 export async function scanPacks(collections, onProgress = () => {}) {
   const pack = await getOrCreateComponentPack();
   if (pack.locked) await pack.configure({ locked: false });
@@ -75,12 +77,21 @@ async function getOrCreateComponentPack() {
 async function ensurePouchItem(pack) {
   const documents = await pack.getDocuments();
   const current = documents.find(item => item.getFlag(MODULE_ID, "pouchKey") === POUCH_KEY);
-  if (current) return current;
+
+  if (current) {
+    const updates = {};
+    if (current.img !== POUCH_ICON) updates.img = POUCH_ICON;
+    if (!current.getFlag(MODULE_ID, "componentPouchContainer")) {
+      updates[`flags.${MODULE_ID}.componentPouchContainer`] = true;
+    }
+    if (Object.keys(updates).length) await current.update(updates);
+    return current;
+  }
 
   const [created] = await Item.implementation.createDocuments([{
     name: "Spell Component Pouch",
     type: "container",
-    img: "icons/containers/bags/pouch-leather-brown.webp",
+    img: POUCH_ICON,
     system: {
       description: { value: "<p>A dedicated container for material spell components.</p>" },
       quantity: 1,
