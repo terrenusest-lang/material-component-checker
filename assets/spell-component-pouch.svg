@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Spell Component Pouch">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0%" stop-color="#26344f"/>
+      <stop offset="100%" stop-color="#0a0e16"/>
+    </radialGradient>
+    <linearGradient id="leather" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9b6238"/>
+      <stop offset="55%" stop-color="#704020"/>
+      <stop offset="100%" stop-color="#4b2714"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#bd8250"/>
+      <stop offset="100%" stop-color="#704123"/>
+    </linearGradient>
+    <linearGradient id="crystal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#efd3ff"/>
+      <stop offset="50%" stop-color="#a45dff"/>
+      <stop offset="100%" stop-color="#55268e"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="9" stdDeviation="9" flood-color="#000" flood-opacity=".4"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="28" fill="url(#bg)"/>
+  <ellipse cx="128" cy="208" rx="72" ry="17" fill="#000" opacity=".35"/>
+  <g filter="url(#shadow)">
+    <path d="M87 72 99 32l17 17-5 53z" fill="#263b6c" stroke="#9eb5e2" stroke-width="2"/>
+    <path d="M101 42 95 72" stroke="#d4def3" stroke-width="2" stroke-linecap="round"/>
+    <path d="m131 96 4-25 16-35 21 39-17 29z" fill="url(#crystal)" stroke="#f0dbff" stroke-width="2"/>
+    <path d="m146 40 8 61" stroke="#f5e4ff" stroke-width="1.5" opacity=".75"/>
+    <path d="M174 100c10-21 25-35 42-40-7 18-17 33-29 45" fill="none" stroke="#78bb66" stroke-width="6" stroke-linecap="round"/>
+    <path d="m184 79 14-9m-18 20 16-5m-19 16 14 2" stroke="#a4e58d" stroke-width="4" stroke-linecap="round"/>
+    <path d="M72 91c0 33-3 83 8 108 10 24 89 25 101 0 11-25 5-75 3-108z" fill="url(#leather)"/>
+    <path d="M66 84c3-14 17-21 31-18 21 4 42 3 62 0 17-3 30 4 33 18 3 11-5 18-15 18H81c-10 0-18-7-15-18z" fill="url(#rim)"/>
+    <path d="M67 103c24 10 99 10 122 0" fill="none" stroke="#432716" stroke-width="8" stroke-linecap="round"/>
+    <path d="M77 106c25 8 77 8 102 0" fill="none" stroke="#9a7047" stroke-width="3" stroke-linecap="round"/>
+    <path d="M71 104c-14 16-21 33-23 52m137-52c13 16 20 33 22 52" fill="none" stroke="#4a2d19" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="45" cy="163" r="9" fill="#967047" stroke="#3d2615" stroke-width="2"/>
+    <circle cx="210" cy="163" r="9" fill="#967047" stroke="#3d2615" stroke-width="2"/>
+    <circle cx="128" cy="150" r="27" fill="#b98b4d" stroke="#4c2b13" stroke-width="5"/>
+    <circle cx="128" cy="150" r="18" fill="#67452a"/>
+    <path d="m128 133 4 11h12l-10 7 4 12-10-7-10 7 4-12-10-7h12z" fill="#f0d99b"/>
+    <circle cx="128" cy="150" r="4" fill="#4c2b13"/>
+  </g>
+  <g filter="url(#glow)" fill="#fff2bf">
+    <circle cx="115" cy="94" r="2"/><circle cx="123" cy="88" r="2.2"/><circle cx="132" cy="94" r="1.8"/><circle cx="140" cy="89" r="1.5"/>
+  </g>
+</svg>

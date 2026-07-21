@@ -2,7 +2,7 @@
   "id": "material-component-checker",
   "title": "Material Component Checker",
   "description": "English-only D&D5e material component scanner for Foundry VTT 14 with a real Spell Component Pouch container, compendium builder, inventory validator, and component consumer.",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "compatibility": {
     "minimum": "14",
     "verified": "14.365"
