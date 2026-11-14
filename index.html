@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101a22">
+<title>BattleTech — Isometric Skirmish | Unofficial QSR Demo</title>
+<style>
+:root{--bg:#0b131b;--panel:#141f28;--panel2:#1b2933;--line:#32434d;--text:#e7e8df;--muted:#92a4ac;--gold:#f2bf64;--blue:#79d5ed;--red:#ef8372;--green:#9ed8a6}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 0,#27384255,transparent 63%),repeating-linear-gradient(90deg,transparent 0 79px,#ffffff03 80px);z-index:-1}
+button{font:inherit;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible, a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.topline{height:4px;background:linear-gradient(90deg,#6d4930,#f0b963,#685d4c,#66b1c5)}
+header{max-width:1600px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:19px 24px 17px;gap:14px}
+.brand{display:flex;align-items:center;gap:12px}.emblem{width:42px;height:42px;border:1px solid #ab864d;background:#3d3327;display:grid;place-items:center;color:#ffd385;font-size:25px;clip-path:polygon(20% 0,80% 0,100% 24%,100% 76%,80% 100%,20% 100%,0 76%,0 24%)}
+.kicker{color:var(--gold);font:700 10px/1.2 system-ui;letter-spacing:.25em;text-transform:uppercase}
+h1{font-size:clamp(17px,2.5vw,28px);line-height:1.05;letter-spacing:.045em;margin:5px 0 2px;text-transform:uppercase;font-weight:900}h1 span{color:var(--gold)}
+.micro{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+.header-right{display:flex;gap:11px;align-items:center}.status{color:var(--green);font-size:11px;text-transform:uppercase;letter-spacing:.12em}.status:before{content:"●";margin-right:7px}.ghost{border:1px solid var(--line);background:#20303a;border-radius:3px;color:var(--text);padding:10px 14px;font-weight:700}
+.frame{max-width:1600px;margin:auto;padding:0 22px 18px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+.main{min-width:0}.mapbar{background:#1d2b35;border:1px solid var(--line);border-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 17px;min-height:53px}.mapbar strong{font-size:11px;letter-spacing:.15em;text-transform:uppercase}.mapbar small{color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.pill{border:1px solid #7f6a3b;color:#f0d095;background:#433b2b;padding:4px 8px;font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.mapwrap{position:relative;background:#20313a;overflow:hidden;border:1px solid var(--line);aspect-ratio:1.48;min-height:400px;max-height:680px;user-select:none;touch-action:manipulation}
+.mapwrap:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 52% 40%,#d8bd8259,transparent 48%),radial-gradient(ellipse at 2% 85%,#264959 0,transparent 52%),linear-gradient(125deg,#42515a,#293a42 48%,#1b2934);pointer-events:none}
+.mapwrap:after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 80px 18px #09141c89;pointer-events:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+.maplabel{position:absolute;left:17px;top:16px;font:800 10px system-ui;color:#ecdcac;letter-spacing:.18em;text-transform:uppercase;pointer-events:none;text-shadow:0 2px 8px #000}
+.mapfoot{position:absolute;right:14px;bottom:13px;color:#c5c6b2;font-size:9px;letter-spacing:.15em;pointer-events:none;text-shadow:0 2px 5px #000}
+.boardhint{position:absolute;bottom:20px;left:19px;padding:9px 12px;background:#111d25d9;border-left:3px solid var(--gold);max-width:70%;font-size:12px;color:#e3e3d3;pointer-events:none}
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.mechCard{border:1px solid var(--line);background:linear-gradient(125deg,#1b2a34,#14212b);padding:15px 17px;position:relative;overflow:hidden}
+.mechCard:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--blue)}.mechCard.enemy:before{background:var(--red)}
+.mechline{display:flex;align-items:center;justify-content:space-between;gap:5px}.mechline strong{font-size:16px;letter-spacing:.03em}.mechline span{font-size:10px;letter-spacing:.09em;color:var(--muted)}
+.hull{height:7px;margin:11px 0 7px;border-radius:9px;background:#3d4a51;overflow:hidden}
+.hull div{height:100%;background:linear-gradient(90deg,#447d8f,#a6d9e2);transition:width .4s}.enemy .hull div{background:linear-gradient(90deg,#a85048,#f3a17b)}
+.mechnumbers{display:flex;justify-content:space-between;color:#a9bbc0;font-size:11px;gap:8px}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{border:1px solid var(--line);background:linear-gradient(135deg,#1a2832,#111c24);padding:15px 17px}
+.panel h2{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#b6c6c3;margin:0 0 12px}
+.phasehead{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}.turn{font-size:31px;font-weight:900;line-height:1;color:var(--gold);letter-spacing:-.04em}.dim{color:var(--muted)}
+.phase{font-size:18px;font-weight:800;margin:13px 0 4px;line-height:1.3}.explain{color:#aab8bc;font-size:12px;line-height:1.55}
+.dicebox{display:flex;align-items:center;gap:9px;background:#0c1720;padding:11px;margin-top:13px;justify-content:space-between;border:1px solid #263942}
+.die{width:29px;height:29px;display:grid;place-items:center;border:1px solid #91a8b3;background:#e7e5d9;color:#19242a;font-weight:900;font-size:16px;border-radius:4px}
+.die.red{background:#e5a196;border-color:#e5a196}.die.blue{background:#b9d7e5;border-color:#b9d7e5}
+.dicebox em{font-style:normal;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.09em}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.mode{padding:10px 3px;background:#1a2b35;border:1px solid #40545c;border-radius:3px;color:#cad7d8;font-size:12px;font-weight:800;line-height:1.1}.mode small{display:block;font-size:10px;opacity:.6;margin-top:4px}
+.mode.on{border-color:var(--gold);background:#4c4432;color:#ffe0a0}.mode:disabled{opacity:.28}
+.weapons{display:flex;flex-direction:column;gap:7px}.weapon{background:#10202a;border:1px solid #334650;padding:10px;border-radius:3px;display:grid;grid-template-columns:17px 1fr auto;align-items:center;gap:8px;cursor:pointer}
+.weapon.off{opacity:.47}.weapon input{accent-color:#eab85e}.wtitle{font-size:12px;font-weight:750}.wmeta{font-size:10px;color:#95abb2}.wnum{font-size:14px;font-weight:900;color:var(--gold)}.wnum small{font-size:9px;color:#97adb1;display:block;font-weight:500;text-align:right}
+.primary{width:100%;border:1px solid #e6bb6d;background:linear-gradient(140deg,#e3af50,#ae7932);color:#1c2020;text-transform:uppercase;letter-spacing:.13em;font-size:12px;font-weight:900;padding:14px 9px;margin-top:12px;box-shadow:0 5px 16px #0003}
+.secondary{display:block;width:100%;background:transparent;border:1px solid #49606a;color:#aebdc0;margin-top:8px;padding:9px;font-weight:700;font-size:12px}
+.help{border-top:1px solid #34454d;margin-top:14px;padding-top:12px;font-size:11px;line-height:1.55;color:#9daeb2}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.stat{border:1px solid #344952;padding:9px 4px;text-align:center;background:#13232c}
+.stat b{display:block;font-size:14px;color:#d8e0db}.stat small{display:block;color:#92a2a7;font-size:9px;letter-spacing:.08em}
+.log{margin-top:12px;border:1px solid var(--line);background:#111d26;padding:14px 16px}
+.logtitle{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:900;letter-spacing:.16em;color:var(--gold);text-transform:uppercase;margin-bottom:8px}
+.logentries{height:110px;overflow-y:auto;color:#b6c0c0;font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.logentry{border-bottom:1px solid #2b3b433b;padding:3px 0}.logentry:nth-child(1){color:#f0ddb9}
+footer{max-width:1600px;margin:0 auto;padding:0 23px 20px;color:#788d97;font-size:10px;letter-spacing:.05em}
+.overlay{position:fixed;inset:0;background:#050d15c9;display:none;align-items:center;justify-content:center;z-index:30;padding:16px;backdrop-filter:blur(5px)}.overlay.show{display:flex}
+.modal{background:linear-gradient(145deg,#22333a,#101b23);border:1px solid #b28e50;max-width:570px;width:100%;padding:30px;box-shadow:0 28px 90px #000c}
+.modal .overline{color:var(--gold);font-size:11px;letter-spacing:.2em;font-weight:900;text-transform:uppercase}.modal h3{font-size:clamp(26px,6vw,42px);line-height:1.02;margin:10px 0 14px;text-transform:uppercase;letter-spacing:-.03em}
+.modal p{color:#bac5c3;line-height:1.65;margin:10px 0}.modal .primary{margin-top:16px}.modal a{color:#efd09b}
+@media(max-width:980px){.frame{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.side .panel:last-child{grid-column:1/-1}.mapwrap{max-height:630px}.logentries{height:96px}}
+@media(max-width:620px){header{padding:12px 13px}.frame{padding:0 10px 16px;gap:10px}.header-right .status{display:none}.header-right .ghost{font-size:11px;padding:8px}.emblem{width:35px;height:35px}h1{font-size:18px}.kicker{font-size:8px}.micro{font-size:8px}
+.side{grid-template-columns:1fr;gap:10px}.side .panel:last-child{grid-column:auto}.mapwrap{aspect-ratio:.97;min-height:300px}.mapbar{padding:10px}.mapbar small{font-size:8px}.boardhint{font-size:10px;max-width:80%;bottom:9px;left:9px}.maplabel{font-size:8px}.mapfoot{display:none}
+.info-row{gap:7px;margin-top:8px}.mechCard{padding:10px}.mechline strong{font-size:12px}.mechline span{font-size:8px}.mechnumbers{font-size:9px}.logentries{height:90px}.panel{padding:14px}.modal{padding:21px}}
+</style>
+</head>
+<body>
+<div class="topline"></div>
+<header>
+  <div class="brand"><div class="emblem">⬡</div><div><div class="kicker">31st century / tactical simulator</div><h1>BATTLE<span>TECH</span> <small style="font-size:.43em;color:#9badb4;vertical-align:middle">ISOMETRIC SKIRMISH</small></h1><div class="micro">Неофициальная браузерная адаптация Quick-Start Rules</div></div></div>
+  <div class="header-right"><div class="status">Симулятор активен</div><button class="ghost" id="rulesBtn">? Правила</button></div>
+</header>
+<main class="frame">
+ <section class="main">
+  <div class="mapbar"><strong>⌖ Полигон Сиерра-07</strong><div style="display:flex;align-items:center;gap:9px"><small>Terrain / Desert & Woodland</small><span class="pill" id="turnBadge">Раунд 01</span></div></div>
+  <div class="mapwrap" id="board"><canvas id="field" aria-label="Игровая гексагональная карта. Выбирайте подсвеченные клетки для движения."></canvas><div class="maplabel">GRID / 11 × 9 // ACTIVE</div><div class="mapfoot">ISOMETRIC // 2D6 TACTICAL</div><div class="boardhint" id="boardHint">Выберите тип движения и клетку для перемещения</div></div>
+  <div class="info-row">
+   <div class="mechCard"><div class="mechline"><strong style="color:var(--blue)">WVR-6R WOLVERINE</strong><span>СИНИЕ / ВЫ</span></div><div class="hull"><div id="pHp"></div></div><div class="mechnumbers"><span id="pArmor">Броня</span><span id="pTmm">TMM +0</span></div></div>
+   <div class="mechCard enemy"><div class="mechline"><strong style="color:var(--red)">GRF-1N GRIFFIN</strong><span>КРАСНЫЕ / ИИ</span></div><div class="hull"><div id="eHp"></div></div><div class="mechnumbers"><span id="eArmor">Броня</span><span id="eTmm">TMM +0</span></div></div>
+  </div>
+  <div class="log"><div class="logtitle"><span>▤ Журнал сражения</span><span style="color:#82959b;font-weight:500">D6 × 2 / LIVE</span></div><div class="logentries" id="logentries"></div></div>
+ </section>
+ <aside class="side">
+  <div class="panel"><div class="phasehead"><div><div class="kicker">Тактическое командование</div><div class="phase" id="phaseTitle">Инициатива</div></div><div><div class="dim micro">Раунд</div><div class="turn" id="round">01</div></div></div><p class="explain" id="phaseInfo"></p><div class="dicebox"><div><em>Ваш бросок</em><div style="display:flex;gap:4px;margin-top:5px"><span class="die blue" id="pd1">–</span><span class="die blue" id="pd2">–</span></div></div><span style="font-size:22px;color:#6c858c">/</span><div><em>Противник</em><div style="display:flex;gap:4px;margin-top:5px"><span class="die red" id="ed1">–</span><span class="die red" id="ed2">–</span></div></div></div></div>
+  <div class="panel"><h2 id="actionTitle">01 / ПЕРЕМЕЩЕНИЕ</h2><div class="modes" id="modes"><button class="mode on" data-mode="walk">Шаг<small>5 MP</small></button><button class="mode" data-mode="run">Бег<small>8 MP</small></button><button class="mode" data-mode="jump">Прыжок<small>5 MP</small></button></div><div class="weapons" id="weapons" style="display:none"></div><button class="primary" id="actionBtn">Остаться на месте</button><button class="secondary" id="facingBtn">↻ Изменить направление</button><div class="help" id="helpText">Подсвеченные гексы доступны для перемещения. Поворот корпуса расходует 1 MP за грань; лес замедляет движение. Нажмите Q или E, чтобы повернуть меха перед подтверждением.</div></div>
+  <div class="panel"><h2>02 / Полевые данные</h2><div class="statgrid"><div class="stat"><b id="rangeStat">–</b><small>ГЕКСОВ</small></div><div class="stat"><b id="gatorStat">–</b><small>GATOR</small></div><div class="stat"><b id="woodsStat">–</b><small>ЛЕС / LOS</small></div><div class="stat"><b id="modeStat">–</b><small>РЕЖИМ</small></div></div><div class="help"><b style="color:#e5d3ae">Победа:</b> уничтожьте голову или центральный торс противника. Атаки обеих сторон разрешаются одновременно. Повреждения рук, ног и торса влияют на вооружение и движение.</div></div>
+ </aside>
+</main>
+<footer>Fan-made noncommercial learning prototype, not affiliated with Catalyst Game Labs or Topps. Based on BattleTech Quick-Start Rules, 2026 edition. Original procedural visuals; no official art reproduced.</footer>
+<div class="overlay show" id="overlay"><div class="modal"><div class="overline" id="modalEyebrow">СИМУЛЯЦИЯ / ПОЛИГОН 07</div><h3 id="modalTitle">Войдите в бой</h3><p id="modalText">Вы управляете 55-тонным <b>Wolverine WVR-6R</b> против <b>Griffin GRF-1N</b>. Оба имеют 5 MP на шаг, 8 MP на бег и 5 MP на прыжок. Исследуйте изометрическое поле, перемещайтесь по гексам и выберите оружие для залпа.</p><p style="font-size:12px;color:#d6c098">Это упрощённая обучающая реализация Quick-Start Rules: 2D6, инициатива, G.A.T.O.R., лес, дальность, ракеты, зоны попаданий и перенос урона.</p><button class="primary" id="modalBtn">Начать миссию</button><button class="secondary" id="modalClose">Продолжить</button></div></div>
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const canvas=$("field"),ctx=canvas.getContext("2d"),board=$("board");
+const W=11,H=9,R=33,dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+const hitloc={2:"CT",3:"RA",4:"RA",5:"RL",6:"RT",7:"CT",8:"LT",9:"LL",10:"LA",11:"LA",12:"HD"};
+const locName={HD:"голова",CT:"центр. торс",LT:"левый торс",RT:"правый торс",LA:"левая рука",RA:"правая рука",LL:"левая нога",RL:"правая нога"};
+const srmHits={2:2,3:2,4:2,5:3,6:4,7:4,8:4,9:5,10:5,11:6,12:6};
+const lrmHits={2:3,3:3,4:4,5:6,6:6,7:6,8:6,9:8,10:8,11:10,12:10};
+const seeds=[18,42,87,11,68,12,95,40,61];
+let terrain=[],all=[],geom=[],view={s:1,ox:0,oy:0};
+let game,reachable=new Map(),hover=null,fx=[],pulse=0;
+function key(q,r){return q+":"+r}
+function key3(q,r,f){return q+":"+r+":"+f}
+function valid(q,r){return q>=0&&q<W&&r>=0&&r<H}
+function hexDist(a,b){return Math.max(Math.abs(a.q-b.q),Math.abs(a.r-b.r),Math.abs(-a.q-a.r+b.q+b.r))}
+function d6(){return 1+Math.floor(Math.random()*6)}
+function roll(){const a=d6(),b=d6();return {a,b,n:a+b}}
+function total(m){return Object.values(m.armor).reduce((a,b)=>a+b,0)}
+function cap(m){return Object.values(m.max).reduce((a,b)=>a+b,0)}
+function tmm(m){let d=m.traveled;return (d<3?0:d<5?1:d<7?2:d<10?3:4)+(m.mode==="jump"?1:0)}
+function atkMod(m){return {stand:0,walk:1,run:2,jump:3}[m.mode]||0}
+function node(q,r){return terrain[r]&&terrain[r][q]}
+function makeTerrain(){terrain=[];all=[];for(let r=0;r<H;r++){terrain[r]=[];for(let q=0;q<W;q++){let n=Math.abs(Math.sin((q+2)*19.71+(r+seeds[r])*8.13)),v=n>.82?2:n>.59?1:0;if((q>=3&&q<=7&&r>=3&&r<=5)||(q<4&&r>6)||(q>7&&r<3))v=(n>.91?1:0);if((q===2&&r===7)||(q===8&&r===1))v=0;let t={q,r,woods:v};terrain[r][q]=t;all.push(t)}}}
+function mech(id,q,r,f,armor,weaponDefs){return {id,q,r,f,armor:{...armor},max:{...armor},weapons:weaponDefs.map(w=>({...w,selected:true})),mode:"stand",traveled:0,dead:false}}
+function init(){
+makeTerrain();
+game={round:0,phase:"move",mode:"walk",locked:false,turnFirst:"player",initiative:{p:{a:1,b:1},e:{a:1,b:1}},logs:[],
+player:mech("player",2,7,1,{HD:9,CT:24,LT:20,RT:20,LA:16,RA:16,LL:20,RL:20},[
+{name:"Medium Laser",type:"laser",dmg:5,range:[3,6,9],loc:"HD"},
+{name:"SRM 6",type:"srm",dmg:2,range:[3,6,9],loc:"LT",ammo:15},
+{name:"AC/5",type:"ac",dmg:5,range:[6,12,18],loc:"RA",ammo:20}]),
+enemy:mech("enemy",8,1,4,{HD:9,CT:24,LT:20,RT:20,LA:16,RA:16,LL:20,RL:20},[
+{name:"PPC",type:"ppc",dmg:10,range:[6,12,18],loc:"RA"},
+{name:"LRM 10",type:"lrm",dmg:1,range:[7,14,21],loc:"RT",ammo:12}])};
+fx=[];log("Загрузка тренировочного полигона. Противник: GRF-1N Griffin.");
+startRound();
+}
+function log(msg){if(!game)return;game.logs.unshift("[R"+String(game.round).padStart(2,"0")+"] "+msg);game.logs=game.logs.slice(0,100);$("logentries").innerHTML=game.logs.map(l=>'<div class="logentry">'+l+'</div>').join("")}
+function faceToward(a,b){let best=0,d=1e6;for(let i=0;i<6;i++){const p={q:a.q+dirs[i][0],r:a.r+dirs[i][1]},v=hexDist(p,b);if(v<d){best=i;d=v}}return best}
+function faceDiff(a,b){let d=Math.abs(a-b);return Math.min(d,6-d)}
+function inArc(a,b){return faceDiff(a.f,faceToward(a,b))<=1}
+function cubeRound(x,y,z){let rx=Math.round(x),ry=Math.round(y),rz=Math.round(z),dx=Math.abs(rx-x),dy=Math.abs(ry-y),dz=Math.abs(rz-z);if(dx>dy&&dx>dz)rx=-ry-rz;else if(dy>dz)ry=-rx-rz;else rz=-rx-ry;return {q:rx,r:rz}}
+function between(a,b){let n=hexDist(a,b),out=[];for(let i=1;i<n;i++){let t=i/n,x=a.q+(-a.q-a.r-(-b.q-b.r))*0; x=a.q+(b.q-a.q)*t;let y=-a.q-a.r+(-b.q-b.r+a.q+a.r)*t,z=a.r+(b.r-a.r)*t;out.push(cubeRound(x,y,z))}let seen=new Set;return out.filter(h=>{let k=key(h.q,h.r);if(seen.has(k))return false;seen.add(k);return true})}
+function los(a,b){let woods=0;for(let h of between(a,b))woods+=(node(h.q,h.r)||{woods:0}).woods;return {woods,blocked:woods>=3}}
+function weaponValid(a,b,w){if(!a.armor[w.loc])return false;if(w.ammo!==undefined&&w.ammo<=0)return false;if(!inArc(a,b))return false;if(los(a,b).blocked)return false;return hexDist(a,b)<=w.range[2]}
+function gator(a,b,w){let d=hexDist(a,b),s=d<=w.range[0]?0:d<=w.range[1]?2:4;let l=los(a,b);return {base:4,a:atkMod(a),t:tmm(b),o:l.woods+(node(b.q,b.r)||{woods:0}).woods,r:s,n:4+atkMod(a)+tmm(b)+l.woods+(node(b.q,b.r)||{woods:0}).woods+s,d,blocked:l.blocked}}
+function paths(m,mode){
+let limit=mode==="walk"?5:mode==="run"?8:mode==="jump"?5:0;
+let result=new Map;const blocked=game.player===m?game.enemy:game.player;
+if(!limit||m.armor.LL===0||m.armor.RL===0){result.set(key(m.q,m.r),{q:m.q,r:m.r,f:m.f,cost:0,steps:0,path:[]});return result}
+if(mode==="jump"){for(let t of all){let d=hexDist(m,t);if(d<=limit&&key(t.q,t.r)!==key(blocked.q,blocked.r)&&d>0){let f=faceToward(t,blocked);result.set(key(t.q,t.r),{q:t.q,r:t.r,f,cost:d,steps:d,path:[]})}}return result}
+let queue=[{q:m.q,r:m.r,f:m.f,cost:0,steps:0,path:[]}],seen=new Map();
+while(queue.length){
+queue.sort((a,b)=>a.cost-b.cost);let st=queue.shift(),id=key3(st.q,st.r,st.f);if(seen.has(id)&&seen.get(id)<=st.cost)continue;seen.set(id,st.cost);
+let kk=key(st.q,st.r),old=result.get(kk),pref=faceDiff(st.f,faceToward(st,blocked));
+if(!old||st.cost<old.cost||st.cost===old.cost&&pref<faceDiff(old.f,faceToward(old,blocked)))result.set(kk,st);
+for(let turn of [-1,1]){let cost=st.cost+1;if(cost<=limit)queue.push({...st,cost,f:(st.f+turn+6)%6,path:st.path.concat([[st.q,st.r]])})}
+for(let rev of [false,true]){if(rev&&mode!=="walk")continue;let dir=(st.f+(rev?3:0))%6,qq=st.q+dirs[dir][0],rr=st.r+dirs[dir][1];
+if(!valid(qq,rr)||(qq===blocked.q&&rr===blocked.r))continue;let cost=st.cost+1+node(qq,rr).woods;if(cost<=limit)queue.push({q:qq,r:rr,f:st.f,cost,steps:st.steps+1,path:st.path.concat([[qq,rr]])})}
+}
+result.delete(key(m.q,m.r));return result;
+}
+function refreshReachable(){reachable=game.phase==="move"?paths(game.player,game.mode):new Map()}
+function chooseMode(mode){if(game.phase!=="move")return;game.mode=mode;refreshReachable();render()}
+function commit(m,loc,mode){
+if(loc){m.q=loc.q;m.r=loc.r;m.f=loc.f;m.traveled=loc.steps;m.mode=mode}else{m.mode="stand";m.traveled=0}
+}
+function startRound(){
+if(game.player.dead||game.enemy.dead)return;
+game.round++;game.phase="move";game.mode="walk";game.player.mode="stand";game.enemy.mode="stand";game.player.traveled=0;game.enemy.traveled=0;
+let p=roll(),e=roll(),trials=0;while(p.n===e.n&&trials++<100){p=roll();e=roll()}
+game.initiative={p,e};game.turnFirst=p.n<e.n?"player":"enemy";
+log("Инициатива: вы "+p.n+" / ИИ "+e.n+" — первым движется "+(game.turnFirst==="player"?"Wolverine":"Griffin")+".");
+if(game.turnFirst==="enemy")aiMove();
+refreshReachable();render();
+}
+function aiMove(){
+const m=game.enemy,t=game.player;if(m.dead)return;
+let choices=[];for(let mode of ["walk","run","jump"]){let p=paths(m,mode);for(let x of p.values()){let d=hexDist(x,t),forest=node(x.q,x.r).woods,moveTmm=(x.steps<3?0:x.steps<5?1:x.steps<7?2:3)+(mode==="jump"?1:0),targetF=faceDiff(x.f,faceToward(x,t));
+let score=-Math.abs(d-5)*1.9+(forest*1.5)+(moveTmm*1.2)-({walk:1,run:2,jump:3}[mode]*.5)-targetF*1.8+Math.random()*.9;
+if(d<=6)score+=1.5;if(d<=3)score-=1;choices.push({x,mode,score})}}
+choices.sort((a,b)=>b.score-a.score);
+let best=choices[0];if(best){commit(m,best.x,best.mode);log("Griffin: "+({walk:"шаг",run:"бег",jump:"прыжок"}[best.mode])+" к гексу "+(m.q+1)+"/"+(m.r+1)+", TMM +"+tmm(m)+".")}else{commit(m,null,"stand");log("Griffin удерживает позицию.")}
+fx.push({type:"ring",q:m.q,r:m.r,t:performance.now(),color:"#ee9774"});
+}
+function playerMove(loc){
+if(game.phase!=="move")return;
+commit(game.player,loc,loc?game.mode:"stand");
+log(loc?"Wolverine: "+({walk:"шаг",run:"бег",jump:"прыжок"}[game.mode])+" к гексу "+(game.player.q+1)+"/"+(game.player.r+1)+", TMM +"+tmm(game.player)+".":"Wolverine остаётся на месте.");
+fx.push({type:"ring",q:game.player.q,r:game.player.r,t:performance.now(),color:"#80dfff"});
+if(game.turnFirst==="player")aiMove();
+game.phase="fire";render();
+}
+function rotate(){
+if(game.phase!=="move")return;
+let m=game.player;m.f=(m.f+1)%6;refreshReachable();render();
+}
+function chooseWeapons(){
+let chosen=game.player.weapons.filter(w=>w.selected&&weaponValid(game.player,game.enemy,w));
+let enemy=game.enemy.weapons.filter(w=>weaponValid(game.enemy,game.player,w)&&gator(game.enemy,game.player,w).n<=12);
+return {chosen,enemy};
+}
+function hitRoll(a,b,w,queue){
+let calc=gator(a,b,w),rolls=roll(),valid=weaponValid(a,b,w),hit=valid&&calc.n<=12&&(calc.n<=2||rolls.n>=calc.n);
+if(w.ammo!==undefined)w.ammo--;
+let shooter=a.id==="player"?"Wolverine":"Griffin";
+if(!hit){log(shooter+" • "+w.name+": "+rolls.n+" vs "+calc.n+" — промах.");return}
+let group=[],clusters=0;
+if(w.type==="srm"){clusters=srmHits[roll().n];for(let i=0;i<clusters;i++)group.push(2)}
+else if(w.type==="lrm"){clusters=lrmHits[roll().n];while(clusters>0){let n=Math.min(5,clusters);group.push(n);clusters-=n}}
+else group=[w.dmg];
+let spots=[];for(let d of group){let loc=hitloc[roll().n];queue.push({target:b,loc,d});spots.push(loc)}
+log(shooter+" • "+w.name+": "+rolls.n+" ≥ "+calc.n+" — попадание! "+group.reduce((a,b)=>a+b,0)+" ур. ("+spots.join(", ")+")");
+fx.push({type:w.type==="ppc"?"beam":w.type==="laser"?"beam":"burst",from:{q:a.q,r:a.r},to:{q:b.q,r:b.r},t:performance.now(),color:a.id==="player"?"#80dafa":"#f0a469"});
+}
+function damage(m,loc,d){
+let remaining=d,steps=0;
+while(remaining>0&&steps++<5){
+let left=m.armor[loc]||0,used=Math.min(left,remaining);
+m.armor[loc]=Math.max(0,left-used);remaining-=used;
+if(left>0&&m.armor[loc]===0)log((m.id==="player"?"Wolverine":"Griffin")+": уничтожен элемент "+locName[loc]+"!");
+if(loc==="HD"||loc==="CT"){if(m.armor[loc]===0)m.dead=true;return}
+if(m.armor[loc]>0)return;
+if(loc==="LA"||loc==="LL")loc="LT";
+else if(loc==="RA"||loc==="RL")loc="RT";
+else if(loc==="LT"||loc==="RT")loc="CT";
+else return;
+if((loc==="LT"||loc==="RT")&&m.armor[loc]===0){m.armor[loc==="LT"?"LA":"RA"]=0}
+}
+}
+function playerFire(){
+if(game.phase!=="fire")return;
+const {chosen,enemy}=chooseWeapons(),queue=[];
+log("ФАЗА ОГНЯ: объявлено орудий — Wolverine "+chosen.length+" / Griffin "+enemy.length+".");
+for(let w of chosen)hitRoll(game.player,game.enemy,w,queue);
+for(let w of enemy)hitRoll(game.enemy,game.player,w,queue);
+for(let h of queue)damage(h.target,h.loc,h.d);
+if(game.player.dead||game.enemy.dead){game.phase="over";let label=game.player.dead&&game.enemy.dead?"Ничья":game.enemy.dead?"Победа":"Поражение";
+log("КОНЕЦ БОЯ: "+label.toUpperCase());
+showModal("БОЙ ЗАВЕРШЁН",label,game.player.dead&&game.enemy.dead?"Обе машины уничтожены в одной фазе огня.":game.enemy.dead?"Griffin уничтожен. Полигон перешёл под ваш контроль.":"Wolverine уничтожен. Симуляция завершена.","Новая схватка",true);
+}else game.phase="summary";
+render();
+}
+function geoWorld(q,r,x=0,y=0){let a=(Math.sqrt(3)*R*(q+r/2)+x),b=(1.5*R*r+y);return {x:a-b,y:(a+b)*.49}}
+function sizeCanvas(){let rect=board.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),width=rect.width,height=rect.height;canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+const pts=[];for(let t of all)for(let i=0;i<6;i++){let a=(-90+i*60)*Math.PI/180;pts.push(geoWorld(t.q,t.r,Math.cos(a)*R,Math.sin(a)*R))}
+let mnx=Math.min(...pts.map(p=>p.x)),mxx=Math.max(...pts.map(p=>p.x)),mny=Math.min(...pts.map(p=>p.y)),mxy=Math.max(...pts.map(p=>p.y));
+let sx=(width-42)/(mxx-mnx),sy=(height-110)/(mxy-mny);view={s:Math.min(sx,sy),ox:width/2-(mnx+mxx)/2*Math.min(sx,sy),oy:height/2-(mny+mxy)/2*Math.min(sx,sy)+17};
+geom=all.map(t=>({...t,p:toPix(t.q,t.r),poly:poly(t.q,t.r)}))
+}
+function toPix(q,r,x=0,y=0){let p=geoWorld(q,r,x,y);return {x:p.x*view.s+view.ox,y:p.y*view.s+view.oy}}
+function poly(q,r){let a=[];for(let i=0;i<6;i++){let ang=(-90+i*60)*Math.PI/180;a.push(toPix(q,r,Math.cos(ang)*R,Math.sin(ang)*R))}return a}
+function path(points){ctx.beginPath();points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath()}
+function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill()}
+function drawTree(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ellipse(0,2,12,5,"#0b1b1b7f");ctx.fillStyle="#4f3b2b";ctx.fillRect(-2,-19,4,23);
+for(let i=0;i<3;i++){let dy=-12-i*9;ctx.beginPath();ctx.moveTo(0,dy-18);ctx.lineTo(-12+i*2,dy+3);ctx.lineTo(12-i*2,dy+3);ctx.closePath();ctx.fillStyle=["#315946","#3a6b4c","#56805a"][i];ctx.fill();ctx.strokeStyle="#1b4039";ctx.lineWidth=1;ctx.stroke()}
+ctx.restore()}
+function drawTile(t,now){const p=poly(t.q,t.r),c=toPix(t.q,t.r),selected=hover&&hover.q===t.q&&hover.r===t.r,reach=reachable.has(key(t.q,t.r))&&game.phase==="move",isP=game.player.q===t.q&&game.player.r===t.r,isE=game.enemy.q===t.q&&game.enemy.r===t.r;
+const depth=6*view.s,low=p.map(z=>({x:z.x,y:z.y+depth}));
+path(low);ctx.fillStyle="#37402f";ctx.fill();ctx.strokeStyle="#17282b";ctx.lineWidth=.8;ctx.stroke();
+path(p);let grd=ctx.createLinearGradient(c.x-15,c.y-15,c.x+22,c.y+22);
+if(t.woods===2){grd.addColorStop(0,"#516b53");grd.addColorStop(1,"#344b3d")}
+else if(t.woods===1){grd.addColorStop(0,"#738469");grd.addColorStop(1,"#4e6758")}
+else {grd.addColorStop(0,"#9a9871");grd.addColorStop(1,"#747f6a")}
+ctx.fillStyle=grd;ctx.fill();
+ctx.lineWidth=1.2;ctx.strokeStyle="#33494a";ctx.stroke();
+path(p);ctx.strokeStyle="#e0d3a321";ctx.lineWidth=.7;ctx.stroke();
+if((t.q*9+t.r*3)%6===0&&t.woods===0){ellipse(c.x+6*view.s,c.y,3*view.s,1.2*view.s,"#b4ae8a");ellipse(c.x-6*view.s,c.y+4*view.s,2*view.s,1*view.s,"#44594f")}
+if(t.woods){let count=t.woods===2?3:2;for(let i=0;i<count;i++){let dx=[-11,10,2][i]*view.s,dy=[-3,3,-10][i]*view.s;drawTree(c.x+dx,c.y+dy,Math.max(.4,view.s)*(.55+(i%2)*.17))}}
+if(reach&&!isP&&!isE){ctx.save();path(p);ctx.fillStyle="#70d2e328";ctx.fill();ctx.strokeStyle="#79dbea";ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.stroke();ctx.restore()}
+if(selected){ctx.save();path(p);ctx.fillStyle=reach?"#b3f5ff39":"#ffffff17";ctx.fill();ctx.strokeStyle=reach?"#b1f4ff":"#ead7ac";ctx.lineWidth=2.4;ctx.shadowBlur=13;ctx.shadowColor="#dceec0";ctx.stroke();ctx.restore()}
+if(isP||isE){ctx.save();path(p);ctx.strokeStyle=isP?"#7dd9ee":"#ffae81";ctx.lineWidth=3;ctx.shadowBlur=15;ctx.shadowColor=ctx.strokeStyle;ctx.stroke();ctx.restore()}
+}
+function drawMech(m,now){const c=toPix(m.q,m.r),sc=Math.max(.58,view.s*1.22),col=m.id==="player"?["#366b82","#478da7","#86c8cf","#a2ebfc"]:["#774437","#a85b42","#d49369","#ffd0a4"],down=m.dead;
+ctx.save();ctx.translate(c.x,c.y-8*sc);ctx.scale(sc,sc);
+ellipse(0,11,26,11,"#09171ac0");ctx.translate(0,-(down?10:32)-Math.sin(now/460+m.q)*1.15);
+function shape(coords,color,stroke="#192b34"){ctx.beginPath();coords.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=color;ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle=stroke;ctx.stroke()}
+shape([[-19,5],[-8,5],[-10,36],[-23,42],[-25,30]],col[0]);shape([[7,5],[20,7],[24,31],[12,40],[8,29]],col[0]);
+shape([[-25,29],[-11,29],[-8,41],[-29,43]],col[1]);shape([[12,30],[26,27],[29,40],[8,43]],col[1]);
+shape([[-21,-18],[-5,-24],[11,-20],[21,1],[12,17],[-13,16],[-24,1]],col[1]);
+shape([[-17,-16],[-9,-21],[2,-19],[4,2],[-7,9],[-19,1]],col[2]);shape([[2,-19],[15,-13],[19,2],[8,11],[2,4]],col[0]);
+shape([[-22,-25],[-11,-31],[-4,-22],[-5,-9],[-29,-12],[-34,-20]],col[1]);shape([[12,-26],[27,-29],[33,-20],[27,-9],[9,-12]],col[1]);
+shape([[-27,-8],[-21,-6],[-25,14],[-34,17],[-37,8]],col[0]);shape([[22,-8],[29,-10],[36,13],[28,18],[19,4]],col[0]);
+shape([[-8,-31],[-1,-40],[8,-36],[11,-23],[3,-17],[-8,-19]],col[0]);shape([[-3,-32],[8,-30],[7,-23],[-4,-24]],m.id==="player"?"#93ebf5":"#f5b976","#224651");
+ctx.fillStyle="#23313b";ctx.fillRect(-30,-20,6,15);
+ctx.fillStyle=col[3];ctx.fillRect(-17,-5,8,2);ctx.fillRect(8,-5,8,2);
+ctx.strokeStyle=col[3];ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,-38);ctx.lineTo(5,-51);ctx.stroke();
+if(m.id==="enemy"){shape([[23,-21],[37,-21],[42,-16],[38,-8],[24,-8]],col[0]);ellipse(38,-14,3,3,"#241e1a")}
+else{shape([[-31,-16],[-43,-14],[-46,-8],[-32,-7]],col[0]);ellipse(-44,-11,3,3,"#22343e")}
+if(down){ctx.fillStyle="#0b151ba9";ctx.fillRect(-42,-55,85,110)}
+ctx.restore();
+let a=geoWorld(m.q+dirs[m.f][0],m.r+dirs[m.f][1]),b=geoWorld(m.q,m.r),vx=a.x-b.x,vy=a.y-b.y,vl=Math.hypot(vx,vy)||1,px=c.x+vx/vl*22*view.s,py=c.y+vy/vl*22*view.s;
+ctx.save();ctx.translate(px,py);ctx.rotate(Math.atan2(vy,vx));ctx.fillStyle=m.id==="player"?"#b7f6ff":"#ffd3a4";ctx.shadowBlur=7;ctx.shadowColor=ctx.fillStyle;ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-4,-5);ctx.lineTo(-4,5);ctx.closePath();ctx.fill();ctx.restore();
+let hp=Math.round(total(m)/cap(m)*100);
+ctx.save();ctx.font="700 "+Math.max(9,11*view.s)+"px system-ui";ctx.textAlign="center";ctx.fillStyle="#f0f2e4";ctx.shadowBlur=5;ctx.shadowColor="#000";ctx.fillText(m.id==="player"?"WVR-6R":"GRF-1N",c.x,c.y-85*sc);ctx.restore();
+let ww=47*sc;ctx.fillStyle="#10202a";ctx.fillRect(c.x-ww/2,c.y-78*sc,ww,5);ctx.fillStyle=m.id==="player"?"#89dbea":"#f29d78";ctx.fillRect(c.x-ww/2,c.y-78*sc,ww*hp/100,5)
+}
+function drawFX(now){fx=fx.filter(e=>now-e.t<750);for(let e of fx){let age=(now-e.t)/750;if(e.type==="ring"){let c=toPix(e.q,e.r);ctx.save();ctx.globalAlpha=1-age;ctx.beginPath();ctx.ellipse(c.x,c.y,15+age*55,(9+age*30)*.75,0,0,6.283);ctx.strokeStyle=e.color;ctx.lineWidth=3;ctx.stroke();ctx.restore();continue}
+let a=toPix(e.from.q,e.from.r),b=toPix(e.to.q,e.to.r);ctx.save();ctx.globalAlpha=Math.max(0,1-age);ctx.strokeStyle=e.color;ctx.lineWidth=e.type==="beam"?5:2;ctx.shadowBlur=25;ctx.shadowColor=e.color;ctx.beginPath();ctx.moveTo(a.x,a.y-55*view.s);ctx.lineTo(b.x,b.y-45*view.s);ctx.stroke();ellipse(b.x,b.y-43*view.s,7+age*15,7+age*15,e.color);ctx.restore()}}
+function draw(now){pulse=now;let width=board.clientWidth,height=board.clientHeight;ctx.clearRect(0,0,width,height);
+ctx.save();let bg=ctx.createRadialGradient(width/2,height/2,80,width/2,height/2,width*.75);bg.addColorStop(0,"#253c4080");bg.addColorStop(1,"#0a14172c");ctx.fillStyle=bg;ctx.fillRect(0,0,width,height);ctx.restore();
+for(let t of geom)drawTile(t,now);
+const mechOrder=[game.enemy,game.player].sort((a,b)=>toPix(a.q,a.r).y-toPix(b.q,b.r).y);for(let m of mechOrder)drawMech(m,now);
+drawFX(now);requestAnimationFrame(draw)}
+function contains(points,x,y){let inside=false;for(let i=0,j=points.length-1;i<points.length;j=i++){let a=points[i],b=points[j];if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x))inside=!inside}return inside}
+function hoverAt(e){let box=canvas.getBoundingClientRect(),x=e.clientX-box.left,y=e.clientY-box.top;let found=null;for(let t of geom){if(contains(t.poly,x,y)){found=t;break}}return found}
+function onBoardClick(e){if(game.phase!=="move")return;let t=hoverAt(e);if(!t)return;let st=reachable.get(key(t.q,t.r));if(st)playerMove(st);else if(t.q===game.player.q&&t.r===game.player.r)playerMove(null)}
+function render(){
+if(!game)return;
+$("round").textContent=String(game.round).padStart(2,"0");$("turnBadge").textContent="Раунд "+String(game.round).padStart(2,"0");
+for(let [side,d1,d2] of [["p","pd1","pd2"],["e","ed1","ed2"]]){$(d1).textContent=game.initiative[side].a;$(d2).textContent=game.initiative[side].b}
+let isMove=game.phase==="move",isFire=game.phase==="fire",isSummary=game.phase==="summary",over=game.phase==="over";
+$("phaseTitle").textContent=isMove?"Манёвр":isFire?"Огонь":isSummary?"Результаты":"Конец боя";
+$("phaseInfo").textContent=isMove?"Инициатива "+(game.turnFirst==="player"?"у врага":"у вас")+". Выберите подсвеченный гекс.":isFire?"Все перемещения завершены. Выберите оружие и объявите атаку.":isSummary?"Обе стороны завершили стрельбу. Подготовьте следующий раунд.":"Вражеская или ваша машина уничтожена.";
+$("actionTitle").textContent=isMove?"01 / ПЕРЕМЕЩЕНИЕ":isFire?"02 / ОРУЖИЕ":"03 / ЗАВЕРШЕНИЕ";
+$("modes").style.display=isMove?"grid":"none";$("weapons").style.display=isFire?"flex":"none";
+document.querySelectorAll(".mode").forEach(b=>{b.classList.toggle("on",b.dataset.mode===game.mode);b.disabled=!isMove||game.player.armor.LL===0||game.player.armor.RL===0});
+$("facingBtn").style.display=isMove?"block":"none";
+const p=game.player,t=game.enemy,d=hexDist(p,t),l=los(p,t),g=gator(p,t,p.weapons[0]);
+$("rangeStat").textContent=d;$("gatorStat").textContent=g.n;$("woodsStat").textContent=l.blocked?"БЛОК":String(l.woods);$("modeStat").textContent={walk:"Шаг",run:"Бег",jump:"Прыжок",stand:"Стоп"}[isMove?game.mode:p.mode];
+for(let [m,bar,armor,tmmId] of [[p,"pHp","pArmor","pTmm"],[t,"eHp","eArmor","eTmm"]]){$(bar).style.width=(100*total(m)/cap(m))+"%";$(armor).textContent="Броня "+total(m)+" / "+cap(m);$(tmmId).textContent="TMM +"+tmm(m)}
+if(isFire){
+$("weapons").innerHTML=p.weapons.map((w,i)=>{let valid=weaponValid(p,t,w),gg=gator(p,t,w),am=w.ammo!==undefined?(" · запас "+w.ammo):"";return '<label class="weapon '+(valid?"":"off")+'"><input type="checkbox" data-weapon="'+i+'" '+(w.selected&&valid?"checked":"")+' '+(valid?"":"disabled")+'><div><div class="wtitle">'+w.name+'</div><div class="wmeta">'+(valid?"урон "+(w.type==="srm"||w.type==="lrm"?w.dmg+" / ракета":w.dmg):"Недоступно · нет LOS / дуги / дальности") +am+'</div></div><div class="wnum">'+(valid?gg.n+"+":"—")+'<small>2D6</small></div></label>'}).join("");
+$("weapons").querySelectorAll("input").forEach(el=>el.addEventListener("change",()=>{p.weapons[+el.dataset.weapon].selected=el.checked}));
+}
+$("actionBtn").textContent=isMove?"Остаться на месте":isFire?"Подтвердить залп":isSummary?"Следующий раунд":"Новая схватка";
+$("boardHint").textContent=isMove?"Ход Wolverine: нажмите на голубой гекс для перемещения":isFire?"Фаза огня: выберите оружие в правой панели":isSummary?"Итоги раунда готовы. Нажмите «Следующий раунд»":"Симуляция завершена";
+$("helpText").textContent=isMove?"Шаг: 5 MP и можно назад; бег: 8 MP; прыжок: 5 гексов, игнорирует лес. Поворот стоит 1 MP. Q / E — направление корпуса.":isFire?"G.A.T.O.R.: навык пилота + движение стрелка + движение цели + лес + дальность. Бросок 2D6 должен быть не ниже указанного числа.":"Урон распределяется по секциям меха; уничтожение головы или центрального торса завершает бой.";
+}
+function showModal(eyebrow,title,msg,action,ending){
+$("modalEyebrow").textContent=eyebrow;$("modalTitle").textContent=title;$("modalText").innerHTML=msg;$("modalBtn").textContent=action;$("modalBtn").onclick=()=>{hideModal();if(ending)init()};$("modalClose").style.display=ending?"none":"block";$("overlay").classList.add("show")
+}
+function hideModal(){$("overlay").classList.remove("show")}
+$("modalClose").addEventListener("click",hideModal);
+$("rulesBtn").addEventListener("click",()=>showModal("БЫСТРЫЕ ПРАВИЛА","Как играть","<b>1. Инициатива:</b> стороны бросают 2D6. Проигравший двигается первым.<br><b>2. Манёвр:</b> выберите шаг (5 MP), бег (8 MP) или прыжок (5 MP), затем подсвеченный гекс. Повороты расходуют MP; лес добавляет +1 / +2 MP.<br><b>3. Огонь:</b> отметьте оружие. Для каждого выстрела 2D6 против G.A.T.O.R. Лес может перекрывать видимость. Ракеты используют таблицу кластеров.<br><b>4. Урон:</b> 2D6 определяют секцию попадания. Урон переносится внутрь корпуса. Разрушение головы или центра торса — победа.<br><br>Прототип упрощает некоторые тонкости перемещений и спорные границы видимости. Подробности — в официальном PDF.","Вернуться к бою",false));
+$("modalBtn").onclick=hideModal;
+$("actionBtn").addEventListener("click",()=>{if(game.phase==="move")playerMove(null);else if(game.phase==="fire")playerFire();else if(game.phase==="summary")startRound();else if(game.phase==="over")init()});
+$("facingBtn").addEventListener("click",rotate);
+document.querySelectorAll(".mode").forEach(el=>el.addEventListener("click",()=>chooseMode(el.dataset.mode)));
+canvas.addEventListener("pointermove",e=>{hover=hoverAt(e)});canvas.addEventListener("pointerleave",()=>{hover=null});canvas.addEventListener("click",onBoardClick);
+document.addEventListener("keydown",e=>{if($("overlay").classList.contains("show")){if(e.key==="Escape")hideModal();return}if(game.phase==="move"){if(e.key.toLowerCase()==="q"){game.player.f=(game.player.f+5)%6;refreshReachable();render()}if(e.key.toLowerCase()==="e")rotate();if(e.key==="1")chooseMode("walk");if(e.key==="2")chooseMode("run");if(e.key==="3")chooseMode("jump")}if(e.key==="Enter")$("actionBtn").click()});
+window.addEventListener("resize",sizeCanvas);
+init();sizeCanvas();requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
